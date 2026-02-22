@@ -1,3 +1,4 @@
 # Exclude directories
-.vs/
-data/
+/.vs
+/data
+/.claude

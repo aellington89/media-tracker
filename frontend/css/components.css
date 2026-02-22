@@ -147,7 +147,7 @@
 /* ── Cards ── */
 .media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
   gap: 16px;
   padding: 20px 28px;
 }
@@ -170,20 +170,25 @@
 
 .card-cover {
   width: 100%;
-  aspect-ratio: 2/3;
-  object-fit: cover;
+  object-fit: contain;
+  background: var(--bg-tertiary);
   display: block;
 }
 
+.card-cover--portrait { aspect-ratio: 2/3; }
+.card-cover--square   { aspect-ratio: 1/1; }
+
 .card-cover-placeholder {
   width: 100%;
-  aspect-ratio: 2/3;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 40px;
   background: var(--bg-tertiary);
 }
+
+.card-cover-placeholder.card-cover--portrait { aspect-ratio: 2/3; }
+.card-cover-placeholder.card-cover--square   { aspect-ratio: 1/1; }
 
 .card-body {
   padding: 10px 12px 12px;
@@ -196,7 +201,40 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.card-creator {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.card-secondary {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.tag-chip {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .card-meta {
@@ -267,7 +305,7 @@
 
 .list-item {
   display: grid;
-  grid-template-columns: 40px 1fr auto auto auto auto;
+  grid-template-columns: 48px 1fr auto auto auto auto;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -281,10 +319,7 @@
 .list-item:hover { background: var(--bg-secondary); }
 
 .list-thumb {
-  width: 36px;
-  height: 52px;
   border-radius: 4px;
-  object-fit: cover;
   background: var(--bg-tertiary);
   display: flex;
   align-items: center;
@@ -294,7 +329,10 @@
   overflow: hidden;
 }
 
-.list-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.list-thumb--portrait { width: 36px; height: 52px; }
+.list-thumb--square   { width: 44px; height: 44px; }
+
+.list-thumb img { width: 100%; height: 100%; object-fit: contain; }
 
 .list-title {
   font-size: 14px;
