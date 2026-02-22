@@ -51,7 +51,7 @@ The SQLite database is created automatically at `data/media_tracker.db` on first
 - **Search**: Full-text search across titles and notes
 - **Filters**: Filter by status and letter-grade rating
 - **Sort**: Multiple sort options (newest, oldest, A–Z, highest rated, etc.)
-- **Grid and list views**
+- **Grid and list views** — category-aware image shapes (square for Albums, portrait for others); full image visible; richer metadata per entry
 - **Dashboard**: Stats overview with item counts by status and category
 
 ---
@@ -98,6 +98,29 @@ media-tracker/
 ---
 
 ## Change History
+
+### 2026-02-22
+
+#### Feature: Improved Tile and Row Display
+
+**Category-Aware Image Shapes**
+- Grid cards and list thumbnails now use category-specific aspect ratios: square (1:1) for Albums/Music categories, portrait (2:3) for all others (Movies, Books, Games, TV Shows, custom categories)
+- Images changed from `object-fit: cover` (cropped) to `object-fit: contain` (full image visible, letterboxed against the card background) — ensures no part of the uploaded cover is cut off
+
+**Richer Metadata in Grid Cards**
+- Creator line added below the title — shows the most relevant creator field: Artist (Albums), Author (Books), Director (Movies), Developer (Games)
+- Secondary info line shows Year and Genre beneath the status/rating row
+- Tag chips (up to 3) displayed at the bottom of the card body, coloured to match each tag
+- Grid minimum card width increased from 160 px to 175 px to accommodate the extra lines
+
+**Richer Metadata in List Rows**
+- Subtitle now shows: `Category · Creator · Year · Genre` instead of just category name
+- Tag chips (up to 3) displayed below the subtitle within the title cell
+- Thumbnail column widened to 48 px to fit the larger square Album thumbnails
+
+**Files changed:** `frontend/js/views/library.js`, `frontend/css/components.css`
+
+---
 
 ### 2026-02-21
 

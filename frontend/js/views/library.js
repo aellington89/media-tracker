@@ -275,15 +275,43 @@ function closeDropdown() {
   document.querySelectorAll('.card-dropdown').forEach(d => d.classList.add('hidden'));
 }
 
+function getCoverAspectClass(item) {
+  const name = (item.category_name || '').toLowerCase();
+  if (name.includes('album') || name.includes('music')) return 'square';
+  return 'portrait';
+}
+
+function getPrimaryCreator(item) {
+  const m = item.metadata || {};
+  return m.artist || m.author || m.director || m.developer || null;
+}
+
+function getSecondaryInfo(item) {
+  const m = item.metadata || {};
+  const parts = [];
+  if (m.year) parts.push(m.year);
+  const genre = Array.isArray(m.genre) ? m.genre[0] : m.genre;
+  if (genre) parts.push(genre);
+  return parts.join(' · ');
+}
+
 function gridCard(item) {
+  const aspect = getCoverAspectClass(item);
   const cover = item.cover_image_url
-    ? `<img class="card-cover" src="${item.cover_image_url}" alt="${esc(item.title)}"
+    ? `<img class="card-cover card-cover--${aspect}" src="${item.cover_image_url}" alt="${esc(item.title)}"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const creator = getPrimaryCreator(item);
+  const secondary = getSecondaryInfo(item);
+  const tagChips = item.tags && item.tags.length
+    ? `<div class="card-tags">${item.tags.slice(0,3).map(t =>
+        `<span class="tag-chip" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}55">${esc(t.name)}</span>`
+      ).join('')}</div>`
     : '';
   return `
     <div class="media-card" data-item-id="${item.id}">
       ${cover}
-      <div class="card-cover-placeholder" ${item.cover_image_url ? 'style="display:none"' : ''}>
+      <div class="card-cover-placeholder card-cover--${aspect}" ${item.cover_image_url ? 'style="display:none"' : ''}>
         ${item.category_icon}
       </div>
       <div class="card-menu">
@@ -295,25 +323,41 @@ function gridCard(item) {
       </div>
       <div class="card-body">
         <div class="card-title">${esc(item.title)}</div>
+        ${creator ? `<div class="card-creator">${esc(creator)}</div>` : ''}
         <div class="card-meta">
           <span class="badge badge-${item.status}">${STATUS_LABELS[item.status]}</span>
           ${item.rating ? renderStars(item.rating, true) : ''}
         </div>
+        ${secondary ? `<div class="card-secondary">${esc(secondary)}</div>` : ''}
+        ${tagChips}
       </div>
     </div>
   `;
 }
 
 function listRow(item) {
+  const aspect = getCoverAspectClass(item);
+  const thumbClass = `list-thumb list-thumb--${aspect}`;
   const thumb = item.cover_image_url
-    ? `<div class="list-thumb"><img src="${item.cover_image_url}" alt="" onerror="this.parentNode.innerHTML='${item.category_icon}'"></div>`
-    : `<div class="list-thumb">${item.category_icon}</div>`;
+    ? `<div class="${thumbClass}"><img src="${item.cover_image_url}" alt="" onerror="this.parentNode.innerHTML='${item.category_icon}'"></div>`
+    : `<div class="${thumbClass}">${item.category_icon}</div>`;
+  const creator = getPrimaryCreator(item);
+  const secondary = getSecondaryInfo(item);
+  const subtitleParts = [item.category_name];
+  if (creator) subtitleParts.push(creator);
+  if (secondary) subtitleParts.push(secondary);
+  const tagChips = item.tags && item.tags.length
+    ? `<div class="card-tags" style="margin-top:3px">${item.tags.slice(0,3).map(t =>
+        `<span class="tag-chip" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}55">${esc(t.name)}</span>`
+      ).join('')}</div>`
+    : '';
   return `
     <div class="list-item" data-item-id="${item.id}">
       ${thumb}
       <div>
         <div class="list-title">${esc(item.title)}</div>
-        <div class="list-subtitle">${item.category_name}</div>
+        <div class="list-subtitle">${subtitleParts.map(esc).join(' · ')}</div>
+        ${tagChips}
       </div>
       <span class="badge badge-${item.status}">${STATUS_LABELS[item.status]}</span>
       <div>${item.rating ? renderStars(item.rating, true) : '<span style="color:var(--text-muted);font-size:12px">–</span>'}</div>
