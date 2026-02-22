@@ -1,0 +1,38 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from ..database import get_db
+from ..schemas import CategoryCreate, CategoryUpdate
+from .. import crud
+
+router = APIRouter(prefix="/categories", tags=["categories"])
+
+
+@router.get("")
+def list_categories(db: Session = Depends(get_db)):
+    return crud.list_categories(db)
+
+
+@router.post("", status_code=201)
+def create_category(data: CategoryCreate, db: Session = Depends(get_db)):
+    return crud.create_category(db, data)
+
+
+@router.put("/{cat_id}")
+def update_category(cat_id: int, data: CategoryUpdate, db: Session = Depends(get_db)):
+    result = crud.update_category(db, cat_id, data)
+    if not result:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return result
+
+
+@router.delete("/{cat_id}", status_code=204)
+def delete_category(cat_id: int, db: Session = Depends(get_db)):
+    ok, reason = crud.delete_category(db, cat_id)
+    if not ok:
+        if reason == "not_found":
+            raise HTTPException(status_code=404, detail="Category not found")
+        elif reason == "system":
+            raise HTTPException(status_code=400, detail="Cannot delete built-in category")
+        elif reason == "has_items":
+            raise HTTPException(status_code=400, detail="Category has items — move or delete them first")

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Media Tracker</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-logo">🗂️</span>
+      <span class="sidebar-title">Media Tracker</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#dashboard" class="nav-link" data-view="dashboard">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="#library" class="nav-link" data-view="library">
+        <span class="nav-icon">🗃️</span>
+        <span>All Media</span>
+      </a>
+
+      <div class="nav-section-label">Categories</div>
+      <div id="sidebar-categories">
+        <!-- Populated by app.js -->
+      </div>
+
+      <div class="nav-section-label nav-section-bottom">Settings</div>
+      <a href="#categories" class="nav-link" data-view="categories">
+        <span class="nav-icon">⚙️</span>
+        <span>Manage Categories</span>
+      </a>
+      <a href="#settings" class="nav-link" data-view="settings">
+        <span class="nav-icon">🗂️</span>
+        <span>Field Lists</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-primary btn-full" id="add-media-btn">
+        + Add Media
+      </button>
+    </div>
+  </aside>
+
+  <main id="app-content" class="main-content">
+    <div class="loading-spinner">Loading...</div>
+  </main>
+
+  <!-- Modal Overlay -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal" id="media-modal">
+      <div class="modal-header">
+        <h2 id="modal-title">Add Media</h2>
+        <button class="modal-close" id="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Populated by modal.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
