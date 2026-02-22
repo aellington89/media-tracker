@@ -16,6 +16,12 @@ from .schemas import (
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _serialize_item(item: MediaItem) -> dict:
+    """Convert a MediaItem ORM object to the flat dict shape the frontend expects.
+
+    A manual dict is built here rather than using ORM-level serialization so
+    that related data (category name/color/icon, tag list) can be flattened
+    into a single response object without nested sub-objects.
+    """
     tags = [{"id": mt.tag.id, "name": mt.tag.name, "color": mt.tag.color}
             for mt in item.media_tags if mt.tag]
     try:
@@ -41,6 +47,12 @@ def _serialize_item(item: MediaItem) -> dict:
 
 
 def _load_item(db: Session, item_id: int) -> Optional[MediaItem]:
+    """Fetch a single MediaItem with its related category and tags eagerly loaded.
+
+    joinedload() issues a single SQL JOIN instead of separate queries per
+    relationship, preventing the N+1 query problem when the caller accesses
+    item.category or item.media_tags.
+    """
     return (
         db.query(MediaItem)
         .options(
@@ -86,7 +98,9 @@ def get_media_items(
     if rating is not None:
         query = query.filter(MediaItem.rating == rating)
 
-    # Tag AND-filter: item must have ALL requested tags
+    # Tag AND-filter: item must have ALL requested tags (not just any one of them).
+    # Each additional tag ID adds another .filter(...in subquery) clause, so
+    # only items matching every tag pass through.
     if tag_ids:
         ids = [int(x) for x in tag_ids.split(",") if x.strip()]
         for tid in ids:
@@ -136,6 +150,9 @@ def update_media_item(db: Session, item_id: int, data: MediaItemUpdate) -> Optio
     if not item:
         return None
 
+    # exclude_unset=True means only fields the client explicitly sent are
+    # included. Fields omitted from the request body are not touched, so a
+    # partial update (e.g. just changing the rating) won't overwrite other data.
     update_data = data.model_dump(exclude_unset=True)
     tag_ids = update_data.pop("tag_ids", None)
     metadata = update_data.pop("metadata", None)
@@ -165,6 +182,8 @@ def delete_media_item(db: Session, item_id: int) -> bool:
 
 
 def _set_tags(db: Session, item_id: int, tag_ids: list[int]):
+    # Delete-all-then-reinsert is simpler than diffing the old and new tag sets.
+    # Tag sets are small (typically < 10), so the extra deletes are negligible.
     db.query(MediaTag).filter(MediaTag.media_id == item_id).delete()
     for tid in tag_ids:
         db.add(MediaTag(media_id=item_id, tag_id=tid))
@@ -236,6 +255,8 @@ def delete_category(db: Session, cat_id: int) -> tuple[bool, str]:
         MediaItem.category_id == cat_id
     ).scalar()
     if count > 0:
+        # Refuse to delete a category that still has items rather than silently
+        # orphaning them. The user must move or delete the items first.
         return False, "has_items"
     db.delete(cat)
     db.commit()
@@ -297,6 +318,9 @@ def get_overview_stats(db: Session) -> dict:
             MediaItem.status == s
         ).scalar()
 
+    # Letter grades (A+, B-, etc.) are stored as strings, so SQLite's AVG()
+    # returns NULL. This computation is a stub kept for a potential future
+    # numeric rating column; for now avg_rating will always be 0.0.
     avg = db.query(func.avg(MediaItem.rating)).filter(
         MediaItem.rating.isnot(None)
     ).scalar()

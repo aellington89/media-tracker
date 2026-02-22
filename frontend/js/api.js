@@ -3,10 +3,12 @@ const BASE = 'http://127.0.0.1:8765/api';
 async function request(method, path, body = undefined) {
   const opts = {
     method,
+    // FastAPI requires this header to parse JSON request bodies correctly.
     headers: { 'Content-Type': 'application/json' },
   };
   if (body !== undefined) opts.body = JSON.stringify(body);
   const res = await fetch(BASE + path, opts);
+  // 204 No Content (returned by DELETE) has no body; calling .json() would throw.
   if (res.status === 204) return null;
   const json = await res.json();
   if (!res.ok) throw new Error(json.detail || `HTTP ${res.status}`);
@@ -17,6 +19,9 @@ async function request(method, path, body = undefined) {
 export function getMedia(params = {}) {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
+    // Skip null/undefined/empty values so the backend doesn't receive
+    // parameters like "status=" or "category_id=" that would be treated
+    // as filter-by-empty rather than no filter at all.
     if (v !== null && v !== undefined && v !== '') qs.set(k, v);
   }
   const q = qs.toString();

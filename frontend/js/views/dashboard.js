@@ -15,6 +15,8 @@ const STATUS_COLORS = {
 export async function renderDashboard(container) {
   const [stats, recent] = await Promise.all([api.getStats(), api.getRecent()]);
 
+  // maxCat is the largest category count, used to scale bar widths to 100%.
+  // Math.max(1, ...) prevents division by zero when all categories are empty.
   const maxCat = Math.max(1, ...stats.by_category.map(c => c.count));
 
   container.innerHTML = `
@@ -56,6 +58,10 @@ export async function renderDashboard(container) {
       </div>
       ` : ''}
 
+      ${/* The Ratings section is only shown when avg_rating > 0, which only
+           happens if the backend's numeric AVG() is non-null. With string-based
+           letter grades this section is currently hidden; it will appear once a
+           numeric rating column is added. */ ''}
       ${stats.avg_rating > 0 ? `
       <div class="dashboard-section">
         <h2>Ratings Overview</h2>

@@ -26,6 +26,7 @@ def update_category(cat_id: int, data: CategoryUpdate, db: Session = Depends(get
     return result
 
 
+# 204 No Content on success; 400 with a specific reason string for protected cases.
 @router.delete("/{cat_id}", status_code=204)
 def delete_category(cat_id: int, db: Session = Depends(get_db)):
     ok, reason = crud.delete_category(db, cat_id)
@@ -33,6 +34,8 @@ def delete_category(cat_id: int, db: Session = Depends(get_db)):
         if reason == "not_found":
             raise HTTPException(status_code=404, detail="Category not found")
         elif reason == "system":
+            # Built-in categories (Movies, TV Shows, etc.) cannot be removed.
             raise HTTPException(status_code=400, detail="Cannot delete built-in category")
         elif reason == "has_items":
+            # Prevent deleting a category that still has media items in it.
             raise HTTPException(status_code=400, detail="Category has items — move or delete them first")

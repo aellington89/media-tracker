@@ -14,6 +14,9 @@ def list_media(
     q: Optional[str] = None,
     category_id: Optional[int] = None,
     status: Optional[str] = None,
+    # Query(None) is required here (not a plain default) so that an explicit
+    # empty-string value rating="" can be used to filter for unrated items.
+    # Without Query(), FastAPI treats "" the same as None (parameter absent).
     rating: Optional[str] = Query(None),
     sort_by: str = "created_at",
     sort_dir: str = "desc",
@@ -52,6 +55,8 @@ def update_media(item_id: int, data: MediaItemUpdate, db: Session = Depends(get_
     return item
 
 
+# 204 No Content is the REST convention for a successful DELETE — the resource
+# is gone and there is nothing to return in the response body.
 @router.delete("/{item_id}", status_code=204)
 def delete_media(item_id: int, db: Session = Depends(get_db)):
     if not crud.delete_media_item(db, item_id):

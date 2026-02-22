@@ -23,8 +23,12 @@ class CategoryRead(BaseModel):
     icon: str
     color: str
     is_system: int
+    # Computed at query time (COUNT of media_items), not stored in the DB.
+    # Defaults to 0 so Pydantic has a valid value when constructing from a dict.
     item_count: int = 0
 
+    # Allows Pydantic to read field values directly from SQLAlchemy ORM objects
+    # (e.g. category.name) instead of requiring a plain dict.
     model_config = {"from_attributes": True}
 
 
@@ -44,6 +48,7 @@ class TagRead(BaseModel):
     id: int
     name: str
     color: str
+    # How many media items currently use this tag; computed at query time.
     usage_count: int = 0
 
     model_config = {"from_attributes": True}

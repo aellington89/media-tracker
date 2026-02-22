@@ -1,6 +1,9 @@
+// 13 letter grades in ascending order (F → A+). The array index represents
+// relative rank and is used to populate the <select> in the correct order.
 const GRADES = ['F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+'];
 
 function gradeColor(grade) {
+  // Colour-codes each grade tier: red (F) → orange (D) → yellow (C) → green (B) → indigo (A).
   if (!grade) return 'var(--text-muted)';
   if (grade === 'F')                    return '#ef4444';
   if (grade.startsWith('D'))            return '#f97316';

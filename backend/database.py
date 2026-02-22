@@ -11,6 +11,8 @@ DB_PATH = DATA_DIR / "media_tracker.db"
 
 engine = create_engine(
     f"sqlite:///{DB_PATH}",
+    # SQLite only allows one thread to use a connection by default.
+    # FastAPI can serve requests from multiple threads, so this must be False.
     connect_args={"check_same_thread": False},
 )
 
@@ -80,7 +82,9 @@ def _seed_field_values(db):
     """Seed default field values if the field_values table is empty."""
     existing = db.query(FieldValue).count()
     if existing > 0:
-        return  # Already seeded
+        # Guard makes seeding idempotent — safe to call on every app startup
+        # without risking duplicate rows.
+        return
 
     # Category-scoped genre + sub_genre
     cats = {c.name: c.id for c in db.query(Category).all()}
@@ -110,9 +114,12 @@ def _seed_field_values(db):
 def init_db():
     Base.metadata.create_all(bind=engine)
 
-    # Enable WAL mode for better concurrent access
     with engine.connect() as conn:
+        # WAL (Write-Ahead Log) mode lets readers and one writer run concurrently
+        # without blocking each other, which is important for a web server.
         conn.execute(text("PRAGMA journal_mode=WAL"))
+        # SQLite does NOT enforce foreign keys by default; this pragma enables
+        # ondelete="CASCADE" to actually work on every connection.
         conn.execute(text("PRAGMA foreign_keys=ON"))
 
     # Seed built-in categories if none exist
@@ -127,6 +134,12 @@ def init_db():
 
 
 def get_db():
+    """FastAPI dependency that provides a database session per request.
+
+    The try/finally generator pattern guarantees the session is always closed,
+    even if the route handler raises an exception. FastAPI calls next() to run
+    the route, then resumes here after the response is sent.
+    """
     db = SessionLocal()
     try:
         yield db

@@ -18,7 +18,9 @@ const routes = {
 
 function parseHash() {
   const hash = location.hash || '#dashboard';
-  // Match #library/category/123
+  // Handle the sub-route pattern #library/category/123 that sidebar category
+  // links produce. The view stays '#library' but categoryId is extracted so
+  // the library can pre-filter to that category.
   const catMatch = hash.match(/^#library\/category\/(\d+)$/);
   if (catMatch) return { view: '#library', categoryId: parseInt(catMatch[1]) };
   return { view: hash, categoryId: null };
@@ -27,6 +29,8 @@ function parseHash() {
 async function navigate() {
   const { view, categoryId } = parseHash();
   const content = document.getElementById('app-content');
+  // Replace content with a spinner immediately so the user sees feedback
+  // while the async view function fetches data from the backend.
   content.innerHTML = '<div class="loading-spinner">Loading...</div>';
 
   updateActiveNav(view, categoryId);
@@ -97,13 +101,16 @@ async function init() {
   window.addEventListener('hashchange', navigate);
   navigate();
 
-  // "Add Media" button — dynamic import breaks the app.js ↔ modal.js cycle
+  // modal.js is imported dynamically (lazily) to break the circular dependency:
+  // app.js → modal.js → state.js → (back) is fine, but a static import of
+  // modal.js at the top of app.js would create a cycle during module resolution.
   document.getElementById('add-media-btn').addEventListener('click', async () => {
     const { openModal } = await import('./components/modal.js');
     openModal(null);
   });
 
-  // Close modal on overlay click
+  // The overlay listener is NOT { once: true } — it must stay attached for
+  // repeated modal open/close cycles throughout the session.
   document.getElementById('modal-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'modal-overlay') closeModal();
   });

@@ -21,6 +21,11 @@ DEFAULT_PORT = 8765
 
 
 def wait_for_server(url: str, timeout: int = 15) -> bool:
+    """Poll the given URL until it responds or timeout elapses.
+
+    Uses the stats overview endpoint as a health check because it exercises
+    the database layer, confirming the app is fully ready (not just bound).
+    """
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -36,7 +41,10 @@ def run_server(port: int):
         "backend.main:app",
         host=HOST,
         port=port,
+        # Suppress info-level request logs to keep the console clean for users.
         log_level="warning",
+        # reload=True is for development only; keep it off so the server
+        # doesn't watch files and restart unexpectedly in production.
         reload=False,
     )
 
@@ -50,6 +58,8 @@ def main():
     url = f"http://{HOST}:{args.port}"
     print(f"Starting Media Tracker at {url}")
 
+    # Run the server in a daemon thread so it dies automatically when the main
+    # thread exits (e.g. after Ctrl+C), without needing an explicit shutdown call.
     thread = threading.Thread(target=run_server, args=(args.port,), daemon=True)
     thread.start()
 
@@ -64,6 +74,8 @@ def main():
 
     print("Press Ctrl+C to stop.")
     try:
+        # Block the main thread so the process stays alive.
+        # The daemon server thread will run until this join() is interrupted.
         thread.join()
     except KeyboardInterrupt:
         print("\nMedia Tracker stopped.")

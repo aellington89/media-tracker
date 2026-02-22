@@ -101,6 +101,18 @@ media-tracker/
 
 ### 2026-02-22
 
+#### Code Comments
+
+Inline comments added to all source files explaining non-obvious design decisions:
+
+- **Backend** (`run.py`, `main.py`, `database.py`, `models.py`, `schemas.py`, `crud.py`, routers): WAL mode rationale, `check_same_thread=False` requirement, `metadata_json` column alias, N+1 query prevention via `joinedload`, tag AND-filter subquery approach, `exclude_unset=True` partial-update pattern, idempotent seeding guard, UUID filename strategy, cache-busting SPA asset injection, 204 No Content conventions.
+- **Frontend JS** (`api.js`, `app.js`, `library.js`, `modal.js`, `rating.js`, `toast.js`, views): XSS-prevention `esc()` helper, debounced search timer, `{ once: true }` dropdown listener, dynamic modal import for circular-dependency avoidance, `fieldValueCache` key format, tag chip listener re-attachment after re-render, `getCoverAspectClass` aspect ratio logic, `getPrimaryCreator` priority order, `onerror` image fallback.
+- **CSS** (`main.css`, `components.css`): `overflow: hidden` rationale, sticky page header z-index, hover-reveal opacity pattern, `object-fit: contain` vs `cover` tradeoff, `backdrop-filter` purpose, `z-index` layering (suggestions → modal → toast), `calc(100vh - 88px)` settings-panel magic number, legacy status badge/class retention notes.
+
+**Files changed:** all source files
+
+---
+
 #### Feature: Improved Tile and Row Display
 
 **Category-Aware Image Shapes**
