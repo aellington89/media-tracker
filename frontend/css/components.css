@@ -62,10 +62,6 @@
 
 .badge-wishlist   { background: rgba(99,102,241,0.2);  color: #818cf8; }
 .badge-owned      { background: rgba(34,197,94,0.2);   color: #4ade80; }
-/* Legacy status badges — kept for graceful display of old items */
-.badge-in_progress { background: rgba(245,158,11,0.2); color: #fbbf24; }
-.badge-completed  { background: rgba(34,197,94,0.2);   color: #4ade80; }
-.badge-dropped    { background: rgba(239,68,68,0.2);   color: #f87171; }
 
 /* ── Grade Rating ── */
 .grade-badge {
@@ -170,11 +166,16 @@
 
 .card-cover {
   width: 100%;
+  /* object-fit: contain shows the full image without cropping, letterboxing
+     against the card background. "cover" would fill the area but crop the
+     sides, which is undesirable for uploaded cover art. */
   object-fit: contain;
   background: var(--bg-tertiary);
   display: block;
 }
 
+/* Category-aware aspect ratios: Albums/music use square (1:1) art;
+   everything else (movies, books, games, TV) uses portrait (2:3). */
 .card-cover--portrait { aspect-ratio: 2/3; }
 .card-cover--square   { aspect-ratio: 1/1; }
 
@@ -246,6 +247,8 @@
   gap: 4px;
 }
 
+/* The ⋯ action menu is hidden by default and fades in on card hover,
+   keeping the grid clean until the user shows intent to interact. */
 .card-menu {
   position: absolute;
   top: 6px;
@@ -346,6 +349,8 @@
   margin-top: 2px;
 }
 
+/* Same hover-reveal pattern as .card-menu — list row actions are hidden until
+   the user hovers the row to avoid visual clutter in the list view. */
 .list-actions {
   display: flex;
   gap: 6px;
@@ -501,6 +506,8 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+  /* backdrop-filter: blur softens the background content behind the overlay,
+     directing attention to the modal without a harsh hard-edge mask. */
   backdrop-filter: blur(2px);
 }
 
@@ -626,11 +633,6 @@
 .status-option:hover { border-color: var(--border-light); color: var(--text-primary); }
 .status-option.selected-wishlist    { border-color: #818cf8; color: #818cf8; background: rgba(99,102,241,0.1); }
 .status-option.selected-owned       { border-color: #4ade80; color: #4ade80; background: rgba(34,197,94,0.1); }
-/* Legacy — kept for in-flight items */
-.status-option.selected-in_progress { border-color: #fbbf24; color: #fbbf24; background: rgba(245,158,11,0.1); }
-.status-option.selected-completed   { border-color: #4ade80; color: #4ade80; background: rgba(34,197,94,0.1); }
-.status-option.selected-dropped     { border-color: #f87171; color: #f87171; background: rgba(239,68,68,0.1); }
-
 /* ── Tag Input ── */
 .tag-input-container {
   display: flex;
@@ -645,6 +647,8 @@
   transition: border-color 0.15s;
 }
 
+/* :focus-within highlights the container when any child (the text input inside
+   the tag widget) has keyboard focus — standard browser support, no JS needed. */
 .tag-input-container:focus-within { border-color: var(--accent); }
 
 .tag-chip {
@@ -685,6 +689,8 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  /* z-index 200: above the modal body content (z-index not set, ~auto) but
+     below the modal overlay (z-index 1000) and toast (z-index 2000). */
   z-index: 200;
   max-height: 160px;
   overflow-y: auto;
@@ -823,6 +829,8 @@
 .toast.error   { border-left: 3px solid #ef4444; }
 .toast.info    { border-left: 3px solid var(--accent); }
 
+/* Slide up + fade in: toast starts 8px below its final position and invisible,
+   then animates to full opacity at its resting position over 0.2s. */
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -902,11 +910,15 @@
 
 /* ── Settings / Field Lists Page — two-panel layout ── */
 
-/* Outer two-column grid: nav list | detail panel */
+/* Outer two-column grid: fixed nav list (220px) | fluid detail panel. */
 .settings-layout {
   display: grid;
   grid-template-columns: 220px 1fr;
-  height: calc(100vh - 88px); /* subtract page-header height */
+  /* 88px = approximate height of the sticky .page-header (24px top padding +
+     16px bottom padding + ~20px title + ~16px subtitle + ~12px border).
+     Subtracting it makes the two-panel fill exactly the remaining viewport
+     height so neither column overflows or adds a page-level scrollbar. */
+  height: calc(100vh - 88px);
   overflow: hidden;
 }
 

@@ -15,10 +15,14 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 UPLOADS_DIR = DATA_DIR / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
+# Both MIME type and file extension are checked: MIME types can be spoofed by
+# the client, so the extension acts as a second line of defense.
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 
+# FastAPI's modern replacement for @app.on_event("startup").
+# Code before `yield` runs on startup; code after (if any) runs on shutdown.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
@@ -51,6 +55,8 @@ async def upload_cover(file: UploadFile = File(...)):
     if file.content_type and file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type.")
 
+    # Use a UUID hex as the filename to prevent collisions and path-traversal
+    # attacks (the original filename from the client is intentionally discarded).
     filename = f"{uuid.uuid4().hex}{ext}"
     dest = UPLOADS_DIR / filename
     content = await file.read()
@@ -70,8 +76,15 @@ app.mount("/js", StaticFiles(directory=FRONTEND_DIR / "js"), name="js")
 @app.get("/")
 @app.get("/{path:path}")
 async def serve_spa(path: str = ""):
+    # The SPA uses hash-based routing (#dashboard, #library, etc.), so the
+    # server never sees the fragment. Any unrecognised path falls back to
+    # index.html, which lets the JS router handle deep links correctly.
     index = FRONTEND_DIR / "index.html"
     html = index.read_text(encoding="utf-8")
+
+    # Append a Unix timestamp as a cache-buster query string (?v=...) so the
+    # browser always fetches fresh CSS and JS after the server restarts.
+    # This avoids stale asset issues without setting Cache-Control headers.
     ts = int(time.time())
     html = html.replace('/css/main.css"', f'/css/main.css?v={ts}"')
     html = html.replace('/css/components.css"', f'/css/components.css?v={ts}"')

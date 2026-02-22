@@ -13,6 +13,9 @@ const STATUS_LABELS = {
   dropped:     'Dropped',
 };
 
+// Module-level state: filters persist intentionally between navigations.
+// If the user browses to a category, then goes to Dashboard and comes back,
+// the previous filter selections are still applied.
 let currentFilters = {
   q: '',
   category_id: null,
@@ -25,7 +28,7 @@ let currentFilters = {
 };
 
 let viewMode = 'grid'; // 'grid' | 'list'
-let searchTimer = null;
+let searchTimer = null; // holds the debounce timer ID for the search input
 
 export async function renderLibrary(container, opts = {}) {
   if (opts.categoryId) {
@@ -84,7 +87,8 @@ export async function renderLibrary(container, opts = {}) {
     openModal(null, opts.categoryId);
   });
 
-  // Search
+  // Debounced search: wait 300 ms after the user stops typing before fetching,
+  // so we don't fire an API request on every single keystroke.
   container.querySelector('#search-input').addEventListener('input', (e) => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(async () => {
@@ -256,6 +260,8 @@ async function loadItems(container) {
     });
   });
 
+  // { once: true } auto-removes this listener after the first outside click,
+  // so it doesn't accumulate a new listener with every call to loadItems().
   document.addEventListener('click', closeDropdown, { once: true });
 
   // Pagination
@@ -276,12 +282,17 @@ function closeDropdown() {
 }
 
 function getCoverAspectClass(item) {
+  // Album/music cover art is traditionally square (1:1).
+  // All other media types (movies, books, games, TV shows) use portrait (2:3).
   const name = (item.category_name || '').toLowerCase();
   if (name.includes('album') || name.includes('music')) return 'square';
   return 'portrait';
 }
 
 function getPrimaryCreator(item) {
+  // Each category has one "primary credit" field. Checked in priority order:
+  // artist (Albums) → author (Books) → director (Movies) → developer (Games).
+  // TV Shows have no dedicated creator field and return null.
   const m = item.metadata || {};
   return m.artist || m.author || m.director || m.developer || null;
 }
@@ -298,6 +309,8 @@ function getSecondaryInfo(item) {
 function gridCard(item) {
   const aspect = getCoverAspectClass(item);
   const cover = item.cover_image_url
+    // onerror: if the uploaded image file is missing or the URL is broken,
+    // hide the <img> and show the sibling placeholder (category icon) instead.
     ? `<img class="card-cover card-cover--${aspect}" src="${item.cover_image_url}" alt="${esc(item.title)}"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
@@ -370,6 +383,8 @@ function listRow(item) {
   `;
 }
 
+// XSS prevention: escape HTML special characters before inserting any
+// user-controlled string (titles, creator names, tag names, etc.) into innerHTML.
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

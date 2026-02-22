@@ -100,7 +100,9 @@ function categoryRow(c) {
       <div class="category-color-dot" style="background:${c.color}"></div>
       <div class="category-name">${esc(c.name)}</div>
       <div class="category-count">${c.item_count} items</div>
-      ${c.is_system
+      ${/* is_system = 1 means this is a built-in category (Movies, TV Shows, etc.)
+           that cannot be deleted. Show a "Built-in" badge instead of a Delete button. */
+        c.is_system
         ? '<span class="system-badge">Built-in</span>'
         : `<button class="btn btn-danger btn-sm"
                   data-delete-cat="${c.id}"

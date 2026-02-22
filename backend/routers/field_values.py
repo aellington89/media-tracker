@@ -35,6 +35,8 @@ def create_field_value(data: FieldValueCreate, db: Session = Depends(get_db)):
     try:
         return crud.create_field_value(db, data)
     except Exception as e:
+        # The unique constraint (field_type, category_id, value) will raise an
+        # IntegrityError if a duplicate value is submitted; surface it as 400.
         raise HTTPException(status_code=400, detail=str(e))
 
 

@@ -145,6 +145,9 @@ export async function openModal(itemId, defaultCategoryId = null) {
 }
 
 async function loadFieldValueCache() {
+  // Fetch all field values in a single request and index them locally by
+  // composite key "fieldType|categoryId" (e.g. "genre|3", "director|null").
+  // This avoids a separate API call for each form field when the modal opens.
   try {
     const allValues = await api.getFieldValues();
     fieldValueCache = {};
@@ -357,7 +360,9 @@ function initTagInput(body) {
 
   if (!textInput) return;
 
-  // Remove tag on chip click
+  // Remove tag on chip click.
+  // After re-rendering the chips, initTagInput(body) is called again to
+  // re-attach event listeners — re-rendering innerHTML wipes out existing ones.
   chipsEl.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-remove-tag]');
     if (!btn) return;
@@ -400,11 +405,14 @@ function initTagInput(body) {
       if (!selectedTagIds.includes(id)) selectedTagIds.push(id);
       textInput.value = '';
       suggestions.classList.add('hidden');
+      // Re-render chips and re-attach listeners after every tag change.
       chipsEl.innerHTML = renderTagChips();
       initTagInput(body);
     } else if (create) {
       const name = create.dataset.createTag;
       try {
+        // Create the tag in the backend, then add it immediately without
+        // requiring the user to navigate to Settings first.
         const newTag = await api.createTag({ name });
         allTags.push(newTag);
         selectedTagIds.push(newTag.id);
@@ -434,7 +442,9 @@ async function saveForm(itemId) {
   const category_id = parseInt(document.getElementById('field-category')?.value);
   const notes = document.getElementById('field-notes')?.value.trim();
 
-  // Collect metadata from dynamic fields (selects, multi-selects, and inputs)
+  // Metadata is collected fresh from the current DOM state — not merged with
+  // formState.metadata — so whatever the user sees in the form is exactly
+  // what gets saved, with no stale values from the original item.
   const metadata = {};
   body.querySelectorAll('.meta-field').forEach(el => {
     if (el.tagName === 'SELECT' && el.multiple) {

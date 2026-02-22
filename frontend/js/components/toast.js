@@ -8,6 +8,9 @@ export function showToast(message, type = 'info', duration = 3000) {
 
   container.appendChild(toast);
 
+  // After `duration` ms, start the fade-out animation (opacity + slide down).
+  // Remove the DOM node only after the 0.2s CSS transition completes so it
+  // doesn't disappear abruptly while still animating.
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transform = 'translateY(8px)';

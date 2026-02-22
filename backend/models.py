@@ -16,6 +16,8 @@ class Category(Base):
     name = Column(String, nullable=False, unique=True)
     icon = Column(String, default="folder")
     color = Column(String, default="#6366f1")
+    # 1 = built-in system category (Movies, TV Shows, etc.) — cannot be deleted.
+    # 0 = user-created custom category — can be edited and deleted.
     is_system = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -29,10 +31,17 @@ class Tag(Base):
     name = Column(String, nullable=False, unique=True)
     color = Column(String, default="#94a3b8")
 
+    # cascade="all, delete-orphan": when a Tag row is deleted, SQLAlchemy
+    # automatically removes its child MediaTag rows before the delete.
     media_tags = relationship("MediaTag", back_populates="tag", cascade="all, delete-orphan")
 
 
 class MediaTag(Base):
+    """Many-to-many junction table linking media items to tags.
+
+    Both columns form a composite primary key, enforcing uniqueness and
+    preventing a tag from being applied to the same item twice.
+    """
     __tablename__ = "media_tags"
 
     media_id = Column(Integer, ForeignKey("media_items.id", ondelete="CASCADE"), primary_key=True)
@@ -54,11 +63,15 @@ class MediaItem(Base):
     cover_image_url = Column(String, nullable=True)
     date_started = Column(String, nullable=True)
     date_finished = Column(String, nullable=True)
+    # The DB column is named "metadata" but the Python attribute is "metadata_json"
+    # to avoid shadowing SQLAlchemy's own Base.metadata class attribute.
     metadata_json = Column("metadata", Text, nullable=True, default="{}")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     category = relationship("Category", back_populates="media_items")
+    # cascade="all, delete-orphan": deleting a MediaItem automatically removes
+    # all of its MediaTag rows (junction table entries).
     media_tags = relationship("MediaTag", back_populates="media_item", cascade="all, delete-orphan")
 
 

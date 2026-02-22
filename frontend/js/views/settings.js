@@ -230,7 +230,9 @@ async function refreshNav(container) {
     });
   });
 
-  // If a list was already active, re-load its panel
+  // If a list was already selected before re-rendering the nav (e.g. after
+  // adding/deleting a value), restore the active panel so the user doesn't
+  // lose their place. CSS.escape() is required because the key contains "|".
   if (activeKey) {
     const activeBtn = nav.querySelector(`[data-key="${CSS.escape(activeKey)}"]`);
     if (activeBtn) {
@@ -248,6 +250,9 @@ async function loadPanel(container, fieldType, categoryId, label) {
   panel.innerHTML = '<div class="loading-spinner" style="height:120px">Loading…</div>';
 
   try {
+    // scoped=true tells the backend to filter strictly by category_id,
+    // including NULL (shared lists). Without scoped, all values for the
+    // field_type would be returned regardless of category.
     const params = { field_type: fieldType, scoped: true };
     if (categoryId !== null) params.category_id = categoryId;
     const values = await api.getFieldValues(params);
@@ -358,6 +363,8 @@ async function handleDelete(btn, panel, fieldType, categoryId, label, container)
 }
 
 function handleRenameClick(btn) {
+  // Toggle the row into "editing" mode: hide the read-only label and the Rename
+  // button, show the text input and the Save / Cancel buttons.
   const row = btn.closest('.settings-value-row');
   row.querySelector('.settings-value-display').classList.add('hidden');
   row.querySelector('.settings-value-input').classList.remove('hidden');
