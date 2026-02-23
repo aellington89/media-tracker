@@ -2,9 +2,26 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..database import get_db, UPLOADS_DIR
 from ..schemas import MediaItemCreate, MediaItemUpdate, PaginatedMedia
 from .. import crud
+
+
+def _delete_upload_file(url: str | None) -> None:
+    """Delete a cover image from UPLOADS_DIR if it is a local upload.
+
+    Only paths starting with /uploads/ are considered local; external URLs
+    (http/https) are ignored. Errors are suppressed so a missing or
+    already-deleted file never causes the request to fail.
+    """
+    if not url or not url.startswith("/uploads/"):
+        return
+    filename = url.removeprefix("/uploads/")
+    path = UPLOADS_DIR / filename
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
 
 router = APIRouter(prefix="/media", tags=["media"])
 
@@ -49,9 +66,14 @@ def create_media(data: MediaItemCreate, db: Session = Depends(get_db)):
 
 @router.put("/{item_id}")
 def update_media(item_id: int, data: MediaItemUpdate, db: Session = Depends(get_db)):
-    item = crud.update_media_item(db, item_id, data)
-    if not item:
+    old = crud.get_media_item(db, item_id)
+    if not old:
         raise HTTPException(status_code=404, detail="Media item not found")
+    old_url = old.get("cover_image_url")
+    item = crud.update_media_item(db, item_id, data)
+    # Delete the old image only when it has been replaced with a different one.
+    if old_url and old_url != item.get("cover_image_url"):
+        _delete_upload_file(old_url)
     return item
 
 
@@ -59,8 +81,12 @@ def update_media(item_id: int, data: MediaItemUpdate, db: Session = Depends(get_
 # is gone and there is nothing to return in the response body.
 @router.delete("/{item_id}", status_code=204)
 def delete_media(item_id: int, db: Session = Depends(get_db)):
-    if not crud.delete_media_item(db, item_id):
+    item = crud.get_media_item(db, item_id)
+    if not item:
         raise HTTPException(status_code=404, detail="Media item not found")
+    cover_url = item.get("cover_image_url")
+    crud.delete_media_item(db, item_id)
+    _delete_upload_file(cover_url)
 
 
 @router.post("/{item_id}/tags")

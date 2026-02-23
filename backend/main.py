@@ -8,12 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from .database import init_db, DATA_DIR
+from .database import init_db, DATA_DIR, UPLOADS_DIR, purge_orphaned_uploads
 from .routers import media, categories, tags, stats, field_values
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-UPLOADS_DIR = DATA_DIR / "uploads"
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Both MIME type and file extension are checked: MIME types can be spoofed by
 # the client, so the extension acts as a second line of defense.
@@ -26,6 +24,7 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    purge_orphaned_uploads()
     yield
 
 

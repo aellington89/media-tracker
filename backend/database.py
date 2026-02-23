@@ -8,6 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / "media_tracker.db"
+UPLOADS_DIR = DATA_DIR / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 engine = create_engine(
     f"sqlite:///{DB_PATH}",
@@ -131,6 +133,28 @@ def init_db():
 
         # Seed default field values
         _seed_field_values(db)
+
+
+def purge_orphaned_uploads() -> None:
+    """Delete upload files that are no longer referenced by any media item.
+
+    Runs at server startup so files left behind by cancelled edits, mid-edit
+    image replacements, or previous bugs are cleaned up before the app begins
+    serving requests.
+    """
+    # Collect the bare filename portion of every /uploads/... URL in the DB.
+    with SessionLocal() as db:
+        rows = db.execute(
+            text("SELECT cover_image_url FROM media_items WHERE cover_image_url LIKE '/uploads/%'")
+        ).fetchall()
+    referenced = {row[0].removeprefix("/uploads/") for row in rows}
+
+    for f in UPLOADS_DIR.iterdir():
+        if f.is_file() and f.name not in referenced:
+            try:
+                f.unlink(missing_ok=True)
+            except OSError:
+                pass  # Best-effort; a locked or missing file is not fatal
 
 
 def get_db():
